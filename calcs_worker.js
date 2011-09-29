@@ -29,7 +29,7 @@ var mult=null,
 	genCount=0,
 	forceStop=false,
 	loopcounter=0,
-	indexShift={};
+	rightEdge=null;
 
 var console={};
 	
@@ -52,14 +52,16 @@ self.onmessage=function(event){
 			mult=event.data[1];
 			width=(width / mult)|0;
 			height=(height / mult)|0;
-			masks=[-(height+2)-1,
-				-1,
-				(height+2)-1,
-				-(height+2),
-				(height+2),
-				-(height+2)+1,
-				1,
-				(height+2)+1];
+			rightEdge=(width-1)*height;
+			masks=[
+				[-1, -1,-(height+2)-1],
+				[0, -1,-1],
+				[1, -1,(height+2)-1], 
+				[-1, 0,-(height+2)],
+				[1, 0,(height+2)],
+				[-1, 1,-(height+2)+1],
+				[0, 1,1],
+				[1, 1,(height+2)+1]];
 			break;
 		case "setTeams":
 			teams=event.data[1];
@@ -84,24 +86,7 @@ self.onmessage=function(event){
 	}
 }
 
-function createIndexShift(){
-	indexShift[0/* 0*(height+2)+0 == 0 */]=width*(height+2)+height; // TL -> TB
-	indexShift[height+1/* 0*(height+2)+height+1 == height+1 */]=width*(height+2)+1; // BL -> BR
-	indexShift[(width+1)*(height+2)/* 0 y */]=1*(height+2)+height; // TR -> BL
-	indexShift[(width+1)*(height+2)+height+1]=1*(height+2)+1; // BR -> TL
-
-	for(var y=1;y<height+1;++y){ // Loop covering Left and Right Side. x == 0 / x == width + 1
-		indexShift[y]=width*(height+2)+y; // Left to Right
-		indexShift[(width+1)*(height+2)+y]=1*(height+2)+y; // Right to Left
-	}
-	for(var x=1;x<width+1;++x){ // Loop covering Top and Bottom Side. y == 0 / y == height + 1
-		indexShift[x*(height+2)]=x*(height+2)+height; // Top to Bottom
-		indexShift[x*(height+2)+(height+1)]=x*(height+2); // Bottom to Top
-	}
-}
-
 function run(){
-	createIndexShift();
 	if(debug)
 		console.log("Process Started.");
 	gameLoop();
@@ -169,11 +154,14 @@ function iter(){
 	frame[fr].found={};
 }
 
-function analyzeNextLoop(mainIndex){
+function analyzeNextLoop(index){
+	var x=(index/height) | 0,
+		y=index%height;
+
 	//if(forceStop)
 	//	return false;
 
-	var team=frame[fr].alive[mainIndex];
+	var team=frame[fr].alive[index];
 
 	/*if(x==0 || x==499)
 	{
@@ -181,10 +169,31 @@ function analyzeNextLoop(mainIndex){
 	}*/
 	outer:
 	for(var i2=0,l2=masks.length;i2<l2;++i2){
-		var maskIndex=(mainIndex|0)+masks[i2];
-		
-		if(indexShift[maskIndex])
-			maskIndex=indexShift[maskIndex];
+		var x2=x+masks[i2][0],
+			y2=y+masks[i2][1],
+			maskIndex=index+masks[i2][2];
+
+		if(x2<0)
+		{
+			x2 += width;
+			maskIndex += rightEdge;
+		}
+		else if(x2 >= width)
+		{
+			x2 -= width;
+			maskIndex -= rightEdge;
+		}
+		if(y2<0)
+		{
+			y2 += height;
+			maskIndex += height;
+		}
+		else if(y2 >= height)
+		{
+			y2 -= height;
+			maskIndex -= height;
+		}
+			
 		if(frame[fr].dying[maskIndex])
 			continue;
 		if(frame[fr].alive[maskIndex])
@@ -195,10 +204,30 @@ function analyzeNextLoop(mainIndex){
 			var count=[];
 			inner:
 			for(var i=0,l=masks.length;i<l;++i){
-				var loopIndex=maskIndex+masks[i];
+				var x4=x2+masks[i][0],
+					y4=y2+masks[i][1],
+					loopIndex=maskIndex+masks[i][2];
 
-				if(indexShift[loopIndex])
-					loopIndex=indexShift[loopIndex];
+				if(x4<0)
+				{
+					x4 += width;
+					loopIndex += rightEdge;
+				}
+				else if(x4 >= width)
+				{
+					x4 -= width;
+					loopIndex -= rightEdge;
+				}
+				if(y4<0)
+				{
+					y4 += height;
+					loopIndex += height;
+				}
+				else if(y4 >= height)
+				{
+					y4 -= height;
+					loopIndex -= height;
+				}
 
 				/*if(x==0 || x==499)
 				{

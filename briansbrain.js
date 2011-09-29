@@ -50,8 +50,7 @@ var battlefield=document.getElementById("battlefield"),
 	},
 	alive={},
 	dying={},
-	dead={},
-	indecies={};
+	dead={};
 
 /**
  * TODO:  
@@ -77,8 +76,8 @@ function fullDot(x, y, col){
 }
 
 function drawalive(index){
-	var x=indecies[index][0],
-		y=indecies[index][1],
+	var x=(index/height) | 0,
+		y=index%height,
 		team=alive[index];
 
 	dot(x,y,teams[team].alive);
@@ -86,8 +85,8 @@ function drawalive(index){
 }
 
 function drawdying(index){
-	var x=indecies[index][0],
-		y=indecies[index][1],
+	var x=(index/height) | 0,
+		y=index%height,
 		team=dying[index];
 
 	dot(x,y,teams[team].dying);
@@ -95,8 +94,8 @@ function drawdying(index){
 }
 
 function drawdead(index){
-	var x=indecies[index][0],
-		y=indecies[index][1];
+	var x=(index/height) | 0,
+		y=index%height;
 
 	fullDot(x,y,"#000");
 }
@@ -115,10 +114,10 @@ worker.onmessage=function(event){
 			break
 		case "recieveDataChunk":
 			if(event.data[1].length>0){
-				event.data[1].map(function(frame){
-					frameQueues.unshift(frame);
+				for(var i=0,l=event.data[1].length;i<l;++i){
+					frameQueues.unshift(event.data[1][i]);
 					//console.log(frame);
-				});
+				};
 				prep.gen=prep.gen+event.data[1].length;
 				renderLoop=prep.gen;
 				//console.log(event.data[1][2]);
@@ -150,12 +149,12 @@ function runPreRender(){
 	run();
 }
 
-function setLive(x, y, team){
-	alive[(x+1)*(height+2)+y+1]=team;
+function addLive(x, y, team){
+	alive[x*height+y]=team;
 }
 
-function setDying(x, y, team){
-	dying[(x+1)*(height+2)+y+1]=team;
+function addDying(x, y, team){
+	dying[x*height+y]=team;
 }
 
 function run(){
@@ -172,14 +171,15 @@ function run(){
 
 	alive={};
 
-	setLive(125, 125, "one");
-	setLive(125, 126, "one");
+	addLive(125, 125, "one");
+	addLive(125, 126, "one");
 
-	setLive(250, 250, "two");
-	setLive(250, 251, "two");
+	addLive(250, 250, "two");
+	addLive(250, 251, "two");
 
-	setLive(375, 375, "three");
-	setLive(375, 376, "three");
+	addLive(375, 375, "three");
+	addLive(375, 376, "three");
+
 /*
 	
 	alive[100,101]="two";
@@ -266,14 +266,6 @@ function run(){
 	*/
 	workerData("Cells",[alive,dying]);
 	workerData("startProcessing");
-
-	console.log('Prealculating Indecies.');
-	for(var x10=1;x10<width+1;++x10){
-		for(var y10=1;y10<height+1;++y10){
-			indecies[x10*(height+2)+y10]=[x10-1,y10-1];
-		}
-	}
-	console.log("Indecies Precalculated.");
 
 	iter_handle=setInterval(function(){
 		if(!preRender || renderComplete)
