@@ -1,0 +1,17 @@
+Welcome to the Javascript Multiplayer Brian's Brain Implementation!
+-------------------------------------------------------------------
+
+This is currently under optimization stages. I created this repo after having gone through three versions. I saved those versions seperately, so that's where the first three main branch commits come from.
+
+Regular progress will be kept in different branches. Then they will be submitted to the main branch once I finish up with current debugging and have everything working and move on to the next task.
+
+Right now the game supports many different results. The standard ones we've been using to test on are 100x100, 125x125, 200x200, 250x250, and 500x500.  Others are available. For now there is only a square battlefield.
+
+Aside from the normal rules of Brian's Brain, there are a couple new added things to remember. 
+
+First off, the edges of the battlefield do not stop anything. Cells wrap.
+Second, When two different players collide they spawn a neutral party. For now there are no limitations to how that neutral party goes. It can spawn new cells from itself, or with conflicting team cells. NOTE: This will likely change in the future.
+
+Objective: The objective is simple. Design your starting ship/object/thing, and pit it against an opponent. The last one standing wins!  
+
+Bonus Points: (At this point in time this is just ideas, as nothing has been determined.) Things like defeating the opponent in under a certain amount of time, or things like how many live cells you have left, etc.
