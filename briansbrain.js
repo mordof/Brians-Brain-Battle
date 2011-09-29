@@ -49,8 +49,8 @@ var battlefield=document.getElementById("battlefield"),
 		}
 	},
 	alive={},
-	dying={},
-	dead={};
+	dying={};//,
+	/*dead={};*/
 
 /**
  * TODO:  
@@ -91,14 +91,14 @@ function drawdying(index){
 	dot(x,y,teams[team].dying);
 	cellcount_dead++;
 }
-
+/*
 function drawdead(index){
 	var x=(index/height) | 0,
 		y=index%height;
 
 	fullDot(x,y,"#000");
 }
-
+*/
 function debugData(string){
 	document.getElementById("data").innerHTML=string;
 }
@@ -326,5 +326,5 @@ function iter(){
 	else
 		{}//document.getElementById("data").innerHTML="Alive: "+ cellcount_alive+";<br/>Dead: "+cellcount_dead+";<br />Generation: "+gen+";";
 
-	dead=dying;
+	//dead=dying;
 }
