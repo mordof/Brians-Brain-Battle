@@ -1,30 +1,31 @@
 var battlefield=document.getElementById("battlefield"),
 	ctx=battlefield.getContext('2d'),
+	worker=new Worker('calcs_worker.js'),
 	mult=1,
-	width=500/mult,
-	height=500/mult,
-	frame={
-		one: {
-			alive: {},
-			dying: {},
-			dead: {},
-			found: {}
-		},
-		two: {
-			alive: {},
-			dying: {},
-			dead: {},
-			found: {}
-		}
-	},
+	width=(500/mult)|0,
+	height=(500/mult)|0,
 	iter_handle=null,
-	fr = "one",
-	nextfr = null,
 	eg_iters=50,
 	winner=false,
+	winner_label=null,
+	frameQueues=[],
+	allstop=false,
+	loopInit=false,
+	preRender=false,
+	renderComplete=false;
+	mainLoop=0,
+	renderLoop=0,
+	prep={
+		gen: 0,
+		cells_alive: 0,
+		cells_dead: 0
+	},
+	play={
+		gen: 0,
+		cells_alive: 0,
+		cells_dead: 0
+	},
 	gen=0,
-	cellcount_alive=0,
-	cellcount_dead=0,
 	teams={
 		"one": {
 			alive: "#40B6EC",
@@ -47,192 +48,262 @@ var battlefield=document.getElementById("battlefield"),
 			newSpawns: 0
 		}
 	},
-	masks=[
-		[-1, -1],
-		[0, -1],
-		[1, -1], 
-		[-1, 0],
-		[1, 0],
-		[-1, 1],
-		[0, 1],
-		[1, 1]
-	]; 
+	alive={},
+	dying={},
+	dead={},
+	indecies={};
 
-/*  devyn's original item. the spaceship thing
-frame.one.alive['30-50']=true;
-frame.one.alive['30-51']=true;
-frame.one.alive['32-49']=true;
-frame.one.alive['32-52']=true;
-frame.one.alive['34-48']=true;
-frame.one.alive['34-53']=true;
-frame.one.alive['36-47']=true;
-frame.one.alive['36-49']=true;
-frame.one.alive['36-52']=true;
-frame.one.alive['36-54']=true;
-frame.one.alive['39-47']=true;
-frame.one.alive['39-49']=true;
-frame.one.alive['39-52']=true;
-frame.one.alive['39-54']=true;
-
-frame.one.dying['31-50']=true;
-frame.one.dying['31-51']=true;
-frame.one.dying['33-49']=true;
-frame.one.dying['33-52']=true;
-frame.one.dying['35-48']=true;
-frame.one.dying['35-53']=true;
-frame.one.dying['37-47']=true;
-frame.one.dying['37-49']=true;
-frame.one.dying['37-52']=true;
-frame.one.dying['37-54']=true;
-frame.one.dying['38-48']=true;
-frame.one.dying['38-53']=true;
-*/
+/**
+ * TODO:  
+ *
+ * - Optimize pre-rendering (change from push/shift to unshift/pop)
+ * - Add in 
+ *
+ *
+ *
+ *
+ *
+ *
+ */
 
 function dot(x, y, col){
 	ctx.fillStyle= col;
-	ctx.fillRect(x*mult, y*mult, 1*mult, 1*mult);
+	ctx.fillRect(x*mult, y*mult, 1*mult-(mult>2.5?0.5:0), 1*mult-(mult>2.5?0.5:0));
 }
 
-function calcalive(item){
-	var obj=item.split("-"),
-		x=parseInt(obj[0],10),
-		y=parseInt(obj[1],10),
-		team=frame[fr].alive[x+"-"+y];
+function fullDot(x, y, col){
+	ctx.fillStyle= col;
+	ctx.fillRect(x*mult, y*mult, 1*mult-(mult>1?0.5:0)-0.5, 1*mult-(mult>1?0.5:0)-0.5);
+}
+
+function drawalive(index){
+	var x=indecies[index][0],
+		y=indecies[index][1],
+		team=alive[index];
 
 	dot(x,y,teams[team].alive);
-
 	cellcount_alive++;
-
-	masks.map(function(mask){
-		x2=x+mask[0];
-		y2=y+mask[1];
-
-		if(x2<0)
-			x2=width + x2;
-		if(x2 >= width)
-			x2 = x2 - width;
-		if(y2<0)
-			y2=height + y2;
-		if(y2 >= height)
-			y2 = y2 - height;
-
-		if(frame[fr].dying[x2+"-"+y2])
-			return false;
-		if(frame[fr].alive[x2+"-"+y2])
-			return false;
-
-		if(frame[fr].found[x2+"-"+y2]==undefined)
-		{
-			var count=[];
-
-			for(var i=0,l=masks.length;i<l;i++){
-				x4=x2+masks[i][0];
-				y4=y2+masks[i][1];
-
-				if(x4<0)
-					x4=width + x4;
-				if(x4 >= width)
-					x4 = x4 - width;
-				if(y4<0)
-					y4=height + y4;
-				if(y4 >= height)
-					y4 = y4 - height;
-
-				if(frame[fr].alive[x4+"-"+y4]!=undefined){
-					count.push(frame[fr].alive[x4+"-"+y4]);
-					if(count.length==3)
-						break;
-				}
-					
-			}
-
-			if(count.length==2){
-				frame[fr].found[x2+"-"+y2]=true;
-
-				if(count[0]==count[1]){
-					frame[nextfr].alive[x2+"-"+y2]=team;
-					teams[team].newSpawns++;	
-				}
-				else {
-					frame[nextfr].alive[x2+"-"+y2]="neutral";
-					teams["neutral"].newSpawns++;
-				}
-				
-				
-			}
-		}
-	});
 }
 
-function drawdying(item){
-	var obj=item.split("-"),
-		x=obj[0],
-		y=obj[1],
-		team=frame[fr].dying[x+"-"+y];
+function drawdying(index){
+	var x=indecies[index][0],
+		y=indecies[index][1],
+		team=dying[index];
 
 	dot(x,y,teams[team].dying);
 	cellcount_dead++;
 }
 
-function drawdead(item){
-	var obj=item.split("-"),
-		x=obj[0],
-		y=obj[1];
+function drawdead(index){
+	var x=indecies[index][0],
+		y=indecies[index][1];
 
-	dot(x,y,"#000");
+	fullDot(x,y,"#000");
+}
+
+function debugData(string){
+	document.getElementById("data").innerHTML=string;
+}
+
+worker.onmessage=function(event){
+	switch(event.data[0]){
+		case "consolelog":
+			console.log(event.data[1]);
+			break;
+		case "consoledir":
+			console.dir(event.data[1]);
+			break
+		case "recieveDataChunk":
+			if(event.data[1].length>0){
+				event.data[1].map(function(frame){
+					frameQueues.unshift(frame);
+					//console.log(frame);
+				});
+				prep.gen=prep.gen+event.data[1].length;
+				renderLoop=prep.gen;
+				//console.log(event.data[1][2]);
+				if(event.data[1][event.data[1].length-1][2]==undefined)
+					workerData("resumeProcessing");
+				else
+				{
+					renderComplete=true;
+					console.timeEnd("benchMark time:");
+				}
+					
+			}
+			break;
+		default:
+			console.log(event.data[0]);
+	}
+}
+
+function workerData(key, data){
+	var tmparr=[];
+	tmparr[0]=key;
+	if(data)
+		tmparr[1]=data;
+	worker.postMessage(tmparr);
+}
+
+function runPreRender(){
+	preRender=true;
+	run();
+}
+
+function setLive(x, y, team){
+	alive[(x+1)*(height+2)+y+1]=team;
+}
+
+function setDying(x, y, team){
+	dying[(x+1)*(height+2)+y+1]=team;
 }
 
 function run(){
 	ctx.fillStyle = "#000";
 	ctx.fillRect(0, 0, width*mult, height*mult);
 
-	clearInterval(iter_handle);
+	console.time("benchMark time:");
 
-	frame.one.alive={};
-	frame.one.dying={};
-	frame.one.found={};
-	frame.two.alive={};
-	frame.two.dying={};
-	frame.two.found={};
+	if(iter_handle)
+		clearInterval(iter_handle);
 
-	gen=0;
+	workerData("setMultiplier",mult);
+	workerData("setTeams",teams);
 
-	if(mult==1)
-	{
-		frame.one.alive['50-50']="one";
-		frame.one.alive['50-51']="one";
+	alive={};
 
-		frame.one.alive['100-100']="two";
-		frame.one.alive['100-101']="two";
+	setLive(125, 125, "one");
+	setLive(125, 126, "one");
 
-		frame.one.alive['150-150']="three";
-		frame.one.alive['150-151']="three";
+	setLive(250, 250, "two");
+	setLive(250, 251, "two");
 
-	}
-	else
-	{ 
-		// 5 - 100x100
-		frame.one.alive['25-25']="one";
-		frame.one.alive['25-26']="one";
-
-		frame.one.alive['50-50']="two";
-		frame.one.alive['50-51']="two";
-
-		frame.one.alive['75-75']="three";
-		frame.one.alive['75-76']="three";
-	}
+	setLive(375, 375, "three");
+	setLive(375, 376, "three");
+/*
 	
+	alive[100,101]="two";
 
-	console.time('test');
+	alive[150,150]="three";
+	alive[150,151]="three";
+
+
+	alive[25,25]="one";
+	alive[25,26]="one";
+
+	alive[50,50]="two";
+	alive[50,51]="two";
+
+	alive[75,75]="three";
+	alive[75,76]="three";
+
+	alive[50,50]="one";
+	alive[50,51]="one";
+	alive[51,50]="one";
+	alive[51,51]="one";
+
+	dying[49,50]="one";
+	dying['51-49']="one";
+	dying['52-51']="one";
+	dying['50-52']="one";
+
+	alive['30-50']="two";
+	alive['30-51']="two";
+	alive['32-49']="two";
+	alive['32-52']="two";
+	alive['34-48']="two";
+	alive['34-53']="two";
+	alive['36-47']="two";
+	alive['36-49']="two";
+	alive['36-52']="two";
+	alive['36-54']="two";
+	alive['39-47']="two";
+	alive['39-49']="two";
+	alive['39-52']="two";
+	alive['39-54']="two";
+
+	dying['31-50']="two";
+	dying['31-51']="two";
+	dying['33-49']="two";
+	dying['33-52']="two";
+	dying['35-48']="two";
+	dying['35-53']="two";
+	dying['37-47']="two";
+	dying['37-49']="two";
+	dying['37-52']="two";
+	dying['37-54']="two";
+	dying['38-48']="two";
+	dying['38-53']="two";
+
+
+	alive['60-60']="two";
+	alive['60-61']="two";
+	alive['61-60']="two";
+	alive['61-61']="two";
+
+	dying['59-60']="two";
+	dying['61-59']="two";
+	dying['62-61']="two";
+	dying['60-62']="two";
+
+
+	alive['70-70']="three";
+	alive['70-71']="three";
+	alive['71-70']="three";
+	alive['71-71']="three";
+
+	dying['69-70']="three";
+	dying['71-69']="three";
+	dying['72-71']="three";
+	dying['70-72']="three";
+
+
+	alive['40-40']="two";
+	alive['40-41']="two";
+	alive['41-40']="two";
+	alive['41-41']="two";	
+
+	*/
+	workerData("Cells",[alive,dying]);
+	workerData("startProcessing");
+
+	console.log('Prealculating Indecies.');
+	for(var x10=1;x10<width+1;++x10){
+		for(var y10=1;y10<height+1;++y10){
+			indecies[x10*(height+2)+y10]=[x10-1,y10-1];
+		}
+	}
+	console.log("Indecies Precalculated.");
 
 	iter_handle=setInterval(function(){
-		iter(); 
-		fr=(fr=="one"?"two":"one");
-	}, 10);
+		if(!preRender || renderComplete)
+		{
+			tmparr=frameQueues.pop();
+			if(tmparr==undefined)
+			{
+				console.log('caught up to pre-render');
+				return true;
+			}
+			alive=tmparr[0];
+			dying=tmparr[3];
+			//console.log(dying);
+			teams=tmparr[1];
+			if(tmparr[2]!=undefined){
+				winner=true;
+				winner_label=tmparr[2];
+				clearInterval(iter_handle);
+			}
+			iter();
+		}
+		else
+			debugData("PreRender Generations: "+renderLoop);
+	},75);
 }
 
 function stop(){
 	clearInterval(iter_handle);
+	workerData("stopProcessing");
+	allstop=true;
 }
 
 function iter(){
@@ -240,51 +311,29 @@ function iter(){
 	ctx.fillRect(0, 0, width*mult, height*mult);
 	cellcount_alive=0;
 	cellcount_dead=0;
-	
-	found=false;
-	tentative_winner=null;
-	nextfr=(fr=="one"?"two":"one");
+
 	if(!winner)
 		gen++;
 
-	//for(var dead in frame[fr].dead){
-	//	drawdead(dead);
-	//}
-	for(var prop in frame[fr].alive){
-		calcalive(prop);
-	}
-	for(var prop2 in frame[fr].dying){
-		drawdying(prop2);
-	}
+	document.getElementById("data").innerHTML=gen;
 
-	for(var team in teams){
-		if(teams[team].newSpawns!=0)
-		{
-			if(found)
-				tentative_winner=null;
-			if(!found)
-			{
-				tentative_winner=team;
-				found=true;
-			}
-		}
-		teams[team].newSpawns=0;
-	}
-	if(tentative_winner){
-		winner=true;
-		document.getElementById("data").innerHTML="WINNER: "+tentative_winner+"; Generations taken: "+gen+";";
-		eg_iters--;
-		console.timeEnd('test');
-		if(eg_iters==0)
-			clearInterval(iter_handle);
+	// For a faded overlay and not clearing the full screen ::
+	// WARNING: slow canvas drawing
+	//for(var d in dead)
+	//	drawdead(d);
+
+	for(var i in alive)
+		drawalive(i);
+	
+	for(var r in dying)
+		drawdying(r);
+	
+	if(winner){
+		//document.getElementById("data").innerHTML="WINNER: "+winner_label+"; Generations taken: "+gen+";";
+		//console.timeEnd('check');
 	}
 	else
-		document.getElementById("data").innerHTML="Alive: "+ cellcount_alive+";<br/>Dead: "+cellcount_dead+";<br />Generation: "+gen+";";
+		{}//document.getElementById("data").innerHTML="Alive: "+ cellcount_alive+";<br/>Dead: "+cellcount_dead+";<br />Generation: "+gen+";";
 
-	//console.log(frame[fr].alive);
-	frame[nextfr].dying=frame[fr].alive;
-	//frame[nextfr].dead=frame[fr].dying;
-	frame[fr].alive={};
-	frame[fr].dying={};
-	frame[fr].found={};
+	dead=dying;
 }
