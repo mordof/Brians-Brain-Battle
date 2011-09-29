@@ -153,7 +153,6 @@ function iter(){
 	frame[fr].dying={};
 	frame[fr].found={};
 }
-
 function analyzeNextLoop(index){
 	var x=(index/height) | 0,
 		y=index%height;

@@ -69,7 +69,6 @@ function dot(x, y, col){
 	ctx.fillStyle= col;
 	ctx.fillRect(x*mult, y*mult, 1*mult-(mult>2.5?0.5:0), 1*mult-(mult>2.5?0.5:0));
 }
-
 function fullDot(x, y, col){
 	ctx.fillStyle= col;
 	ctx.fillRect(x*mult, y*mult, 1*mult-(mult>1?0.5:0)-0.5, 1*mult-(mult>1?0.5:0)-0.5);
