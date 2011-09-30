@@ -80,7 +80,6 @@ function drawalive(index){
 		team=alive[index];
 
 	dot(x,y,teams[team].alive);
-	cellcount_alive++;
 }
 
 function drawdying(index){
@@ -89,7 +88,6 @@ function drawdying(index){
 		team=dying[index];
 
 	dot(x,y,teams[team].dying);
-	cellcount_dead++;
 }
 /*
 function drawdead(index){
@@ -121,7 +119,7 @@ worker.onmessage=function(event){
 				renderLoop=prep.gen;
 				//console.log(event.data[1][2]);
 				if(event.data[1][event.data[1].length-1][2]==undefined)
-					{}//workerData("resumeProcessing");
+					workerData("resumeProcessing");
 				else
 				{
 					renderComplete=true;
@@ -157,8 +155,6 @@ function addDying(x, y, team){
 }
 
 function run(){
-	ctx.fillStyle = "#000";
-	ctx.fillRect(0, 0, width*mult, height*mult);
 
 	console.time("benchMark time:");
 
@@ -186,8 +182,8 @@ function run(){
 	workerData("Cells",[alive,dying]);
 	workerData("startProcessing");
 
-	workerData("resumeProcessing");
-/*
+	//workerData("resumeProcessing");
+
 	iter_handle=setInterval(function(){
 		if(!preRender || renderComplete)
 		{
@@ -210,7 +206,7 @@ function run(){
 		}
 		else
 			debugData("PreRender Generations: "+renderLoop);
-	},175);*/
+	},175);
 }
 
 function step(){

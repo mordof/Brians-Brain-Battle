@@ -85,12 +85,12 @@ function run(){
 
 function gameLoop(){
 	iter_count=16;
-	//while(--iter_count){
-		//if(allstop || winner)
-			//break;
+	while(--iter_count){
+		if(allstop || winner)
+			break;
 		iter();
 		//return false;
-	//}
+	}
 	/*if(debug){
 		if(allstop)
 			console.log("Process Stopped.");
@@ -123,7 +123,7 @@ function iter(){
 				tentative_winner=null;
 			if(!found)
 			{
-				//tentative_winner=team;
+				tentative_winner=team;
 				found=true;
 			}
 		}
@@ -197,7 +197,7 @@ function analyzeNextLoop(index){
 				var loopIndex=maskIndex+masks[i][2];
 
 				if(loopIndex==index)
-					break inner;
+					continue;
 
 				var x4=x2+masks[i][0],
 					y4=y2+masks[i][1];
