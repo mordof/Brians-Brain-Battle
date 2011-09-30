@@ -54,14 +54,14 @@ self.onmessage=function(event){
 			height=(height / mult)|0;
 			rightEdge=(width-1)*height;
 			masks=[
-				[-1, -1,-(height+2)-1],
+				[-1, -1,-(height)-1],
 				[0, -1,-1],
-				[1, -1,(height+2)-1], 
-				[-1, 0,-(height+2)],
-				[1, 0,(height+2)],
-				[-1, 1,-(height+2)+1],
+				[1, -1,(height)-1], 
+				[-1, 0,-(height)],
+				[1, 0,(height)],
+				[-1, 1,-(height)+1],
 				[0, 1,1],
-				[1, 1,(height+2)+1]];
+				[1, 1,(height)+1]];
 			break;
 		case "setTeams":
 			teams=event.data[1];
@@ -98,6 +98,7 @@ function gameLoop(){
 		if(allstop || winner)
 			break;
 		iter();
+		//return false;
 		fr=(fr=="one"?"two":"one");
 	}
 	/*if(debug){
@@ -124,6 +125,8 @@ function iter(){
 	{
 		analyzeNextLoop(i);
 	}
+
+	//forceStop=true;
 		
 	for(var team in teams){
 		if(teams[team].newSpawns!=0)
@@ -157,8 +160,8 @@ function analyzeNextLoop(index){
 	var x=(index/height) | 0,
 		y=index%height;
 
-	//if(forceStop)
-	//	return false;
+	if(forceStop)
+		return false;
 
 	var team=frame[fr].alive[index];
 
@@ -170,7 +173,7 @@ function analyzeNextLoop(index){
 	for(var i2=0,l2=masks.length;i2<l2;++i2){
 		var x2=x+masks[i2][0],
 			y2=y+masks[i2][1],
-			maskIndex=index+masks[i2][2];
+			maskIndex=(index | 0)+masks[i2][2];
 
 		if(x2<0)
 		{
@@ -192,6 +195,9 @@ function analyzeNextLoop(index){
 			y2 -= height;
 			maskIndex -= height;
 		}
+
+		//console.log(x2 + ", " + y2 + " :: " + typeof index + " / " + maskIndex + ", " + (x2*height+y2));
+
 			
 		if(frame[fr].dying[maskIndex])
 			continue;
