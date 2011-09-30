@@ -160,8 +160,8 @@ function analyzeNextLoop(index){
 	var x=(index/height) | 0,
 		y=index%height;
 
-	if(forceStop)
-		return false;
+	//if(forceStop)
+		//return false;
 
 	var team=frame[fr].alive[index];
 
