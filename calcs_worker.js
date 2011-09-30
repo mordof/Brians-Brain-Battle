@@ -11,8 +11,6 @@ var mult=null,
 	winner=false,
 	allstop=false,
 	eq=50,
-	fr = "one",
-	nextfr = null,
 	teams=null,
 	masks=null,
 	sendMsg=self.postMessage,
@@ -193,33 +191,25 @@ function analyzeNextLoop(index){
 
 		if(found[maskIndex]==undefined)
 		{
-			var count=[];
+			var count=[alive[index]];
 			inner:
 			for(var i=0,l=masks.length;i<l;++i){
+				var loopIndex=maskIndex+masks[i][2];
+
+				if(loopIndex==index)
+					break inner;
+
 				var x4=x2+masks[i][0],
-					y4=y2+masks[i][1],
-					loopIndex=maskIndex+masks[i][2];
+					y4=y2+masks[i][1];
 
 				if(x4<0)
-				{
-					x4 += width;
 					loopIndex += rightEdge;
-				}
 				else if(x4 >= width)
-				{
-					x4 -= width;
 					loopIndex -= rightEdge;
-				}
 				if(y4<0)
-				{
-					y4 += height;
 					loopIndex += height;
-				}
 				else if(y4 >= height)
-				{
-					y4 -= height;
 					loopIndex -= height;
-				}
 
 				if(alive[loopIndex]!=undefined){
 					count.push(alive[loopIndex]);
