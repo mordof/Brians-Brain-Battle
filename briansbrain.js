@@ -49,22 +49,8 @@ var battlefield=document.getElementById("battlefield"),
 		}
 	},
 	alive={},
-	dying={};//,
-	/*dead={};*/
-
-/**
- * TODO:  
- *
- * - Optimize pre-rendering (change from push/shift to unshift/pop)
- * - Add in 
- *
- *
- *
- *
- *
- *
- */
-
+	dying={};
+	
 function dot(x, y, col){
 	ctx.fillStyle= col;
 	ctx.fillRect(x*mult, y*mult, 1*mult-(mult>2.5?0.5:0), 1*mult-(mult>2.5?0.5:0));
@@ -91,14 +77,7 @@ function drawdying(index){
 	dot(x,y,teams[team].dying);
 	cellcount_dead++;
 }
-/*
-function drawdead(index){
-	var x=(index/height) | 0,
-		y=index%height;
 
-	fullDot(x,y,"#000");
-}
-*/
 function debugData(string){
 	document.getElementById("data").innerHTML=string;
 }
@@ -115,11 +94,9 @@ worker.onmessage=function(event){
 			if(event.data[1].length>0){
 				for(var i=0,l=event.data[1].length;i<l;++i){
 					frameQueues.unshift(event.data[1][i]);
-					//console.log(frame);
 				};
 				prep.gen=prep.gen+event.data[1].length;
 				renderLoop=prep.gen;
-				//console.log(event.data[1][2]);
 				if(event.data[1][event.data[1].length-1][2]==undefined)
 					workerData("resumeProcessing");
 				else
@@ -157,8 +134,6 @@ function addDying(x, y, team){
 }
 
 function run(){
-	ctx.fillStyle = "#000";
-	ctx.fillRect(0, 0, width*mult, height*mult);
 
 	console.time("benchMark time:");
 
@@ -179,90 +154,6 @@ function run(){
 	addLive(375, 375, "three");
 	addLive(375, 376, "three");
 
-/*
-	
-	alive[100,101]="two";
-
-	alive[150,150]="three";
-	alive[150,151]="three";
-
-
-	alive[25,25]="one";
-	alive[25,26]="one";
-
-	alive[50,50]="two";
-	alive[50,51]="two";
-
-	alive[75,75]="three";
-	alive[75,76]="three";
-
-	alive[50,50]="one";
-	alive[50,51]="one";
-	alive[51,50]="one";
-	alive[51,51]="one";
-
-	dying[49,50]="one";
-	dying['51-49']="one";
-	dying['52-51']="one";
-	dying['50-52']="one";
-
-	alive['30-50']="two";
-	alive['30-51']="two";
-	alive['32-49']="two";
-	alive['32-52']="two";
-	alive['34-48']="two";
-	alive['34-53']="two";
-	alive['36-47']="two";
-	alive['36-49']="two";
-	alive['36-52']="two";
-	alive['36-54']="two";
-	alive['39-47']="two";
-	alive['39-49']="two";
-	alive['39-52']="two";
-	alive['39-54']="two";
-
-	dying['31-50']="two";
-	dying['31-51']="two";
-	dying['33-49']="two";
-	dying['33-52']="two";
-	dying['35-48']="two";
-	dying['35-53']="two";
-	dying['37-47']="two";
-	dying['37-49']="two";
-	dying['37-52']="two";
-	dying['37-54']="two";
-	dying['38-48']="two";
-	dying['38-53']="two";
-
-
-	alive['60-60']="two";
-	alive['60-61']="two";
-	alive['61-60']="two";
-	alive['61-61']="two";
-
-	dying['59-60']="two";
-	dying['61-59']="two";
-	dying['62-61']="two";
-	dying['60-62']="two";
-
-
-	alive['70-70']="three";
-	alive['70-71']="three";
-	alive['71-70']="three";
-	alive['71-71']="three";
-
-	dying['69-70']="three";
-	dying['71-69']="three";
-	dying['72-71']="three";
-	dying['70-72']="three";
-
-
-	alive['40-40']="two";
-	alive['40-41']="two";
-	alive['41-40']="two";
-	alive['41-41']="two";	
-
-	*/
 	workerData("Cells",[alive,dying]);
 	workerData("startProcessing");
 
@@ -277,7 +168,6 @@ function run(){
 			}
 			alive=tmparr[0];
 			dying=tmparr[3];
-			//console.log(dying);
 			teams=tmparr[1];
 			if(tmparr[2]!=undefined){
 				winner=true;
@@ -288,7 +178,7 @@ function run(){
 		}
 		else
 			debugData("PreRender Generations: "+renderLoop);
-	},75);
+	},100);
 }
 
 function stop(){
@@ -300,18 +190,6 @@ function stop(){
 function iter(){
 	ctx.fillStyle = "#000";
 	ctx.fillRect(0, 0, width*mult, height*mult);
-	cellcount_alive=0;
-	cellcount_dead=0;
-
-	if(!winner)
-		gen++;
-
-	document.getElementById("data").innerHTML=gen;
-
-	// For a faded overlay and not clearing the full screen ::
-	// WARNING: slow canvas drawing
-	//for(var d in dead)
-	//	drawdead(d);
 
 	for(var i in alive)
 		drawalive(i);
@@ -320,11 +198,7 @@ function iter(){
 		drawdying(r);
 	
 	if(winner){
-		//document.getElementById("data").innerHTML="WINNER: "+winner_label+"; Generations taken: "+gen+";";
-		//console.timeEnd('check');
 	}
 	else
-		{}//document.getElementById("data").innerHTML="Alive: "+ cellcount_alive+";<br/>Dead: "+cellcount_dead+";<br />Generation: "+gen+";";
-
-	//dead=dying;
+		{}
 }
