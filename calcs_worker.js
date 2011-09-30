@@ -52,7 +52,7 @@ self.onmessage=function(event){
 			mult=event.data[1];
 			width=(width / mult)|0;
 			height=(height / mult)|0;
-			rightEdge=(width-1)*height;
+			rightEdge=width*height;
 			masks=[
 				[-1, -1,-(height)-1],
 				[0, -1,-1],
@@ -74,7 +74,6 @@ self.onmessage=function(event){
 			break;
 		case "Cells":
 			frame.one.alive=event.data[1][0];
-			//console.log(frame.one.alive);
 			if(event.data[1][1]!=undefined)
 				frame.one.dying=event.data[1][1];
 			break;
@@ -98,16 +97,9 @@ function gameLoop(){
 		if(allstop || winner)
 			break;
 		iter();
-		//return false;
 		fr=(fr=="one"?"two":"one");
 	}
-	/*if(debug){
-		if(allstop)
-			console.log("Process Stopped.");
-		if(winner)
-			console.log("Prerender Complete.");
-	}*/
-	
+
 	sendDataChunk(frameQueue);
 	frameQueue=[];
 }
@@ -126,8 +118,6 @@ function iter(){
 		analyzeNextLoop(i);
 	}
 
-	//forceStop=true;
-		
 	for(var team in teams){
 		if(teams[team].newSpawns!=0)
 		{
@@ -158,17 +148,9 @@ function iter(){
 }
 function analyzeNextLoop(index){
 	var x=(index/height) | 0,
-		y=index%height;
+		y=index%height,
+		team=frame[fr].alive[index]
 
-	if(forceStop)
-		return false;
-
-	var team=frame[fr].alive[index];
-
-	/*if(x==0 || x==499)
-	{
-		console.log("Gen: "+genCount+"; x: "+x+"; y: "+y+";");
-	}*/
 	outer:
 	for(var i2=0,l2=masks.length;i2<l2;++i2){
 		var x2=x+masks[i2][0],
@@ -196,9 +178,6 @@ function analyzeNextLoop(index){
 			maskIndex -= height;
 		}
 
-		//console.log(x2 + ", " + y2 + " :: " + typeof index + " / " + maskIndex + ", " + (x2*height+y2));
-
-			
 		if(frame[fr].dying[maskIndex])
 			continue;
 		if(frame[fr].alive[maskIndex])
@@ -234,21 +213,6 @@ function analyzeNextLoop(index){
 					loopIndex -= height;
 				}
 
-				/*if(x==0 || x==499)
-				{
-					constring="Gen: "+genCount+"; x: "+x+"; y: "+y+";  | Mask: "+mask+"; x2: "+x2+"; y2: "+y2+"; Found: False;";
-					conlen=constring.length;
-					newlen=73-conlen;
-					inner=x5+","+y5;
-					innerlen=inner.length;
-					correct=x4+","+y4;
-					correctlen=correct.length;
-
-					console.log(constring+repeat(" ",newlen)+"| Inner Mask: "+ x5+","+y5+";"+repeat(" ",7-innerlen)+" Corrected: "+x4+","+y4+";"+repeat(" ",8-correctlen)+"Index: "+loopIndex+"; x: "+Math.floor(loopIndex/height)+"; y:"+(loopIndex%height)+";");
-				}*/
-
-				//++loopcounter;
-
 				if(frame[fr].alive[loopIndex]!=undefined){
 					count.push(frame[fr].alive[loopIndex]);
 					if(count.length==3)
@@ -272,13 +236,3 @@ function analyzeNextLoop(index){
 		}
 	}
 }
-/*
-function repeat(pattern, count) {
-    if (count < 1) return '';
-    var result = '';
-    while (count > 0) {
-        if (count & 1) result += pattern;
-        count >>= 1, pattern += pattern;
-    };
-    return result;
-};*/
