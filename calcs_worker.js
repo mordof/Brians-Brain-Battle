@@ -1,18 +1,10 @@
 var mult=null,
 	width=500,
 	height=500,
-	frame={
-		one: {
-			alive: {},
-			dying: {},
-			found: {}
-		},
-		two: {
-			alive: {},
-			dying: {},
-			found: {}
-		}
-	},
+	alive={},
+	nextAlive={},
+	dying={},
+	found={},
 	frameQueue=[],
 	found=false,
 	tentative_winner=null,
@@ -52,7 +44,7 @@ self.onmessage=function(event){
 			mult=event.data[1];
 			width=(width / mult)|0;
 			height=(height / mult)|0;
-			rightEdge=(width-1)*height;
+			rightEdge=(width)*height;
 			masks=[
 				[-1, -1,-(height)-1],
 				[0, -1,-1],
@@ -73,14 +65,15 @@ self.onmessage=function(event){
 			gameLoop();
 			break;
 		case "Cells":
-			frame.one.alive=event.data[1][0];
+			alive=event.data[1][0];
 			//console.log(frame.one.alive);
 			if(event.data[1][1]!=undefined)
-				frame.one.dying=event.data[1][1];
+				dying=event.data[1][1];
 			break;
 		case "stopProcessing":
 			if(debug)
 				console.log("Stop Sent");
+			frameQueue=[];
 			allstop=true;
 			break;
 	}
@@ -94,13 +87,12 @@ function run(){
 
 function gameLoop(){
 	iter_count=16;
-	while(--iter_count){
-		if(allstop || winner)
-			break;
+	//while(--iter_count){
+		//if(allstop || winner)
+			//break;
 		iter();
 		//return false;
-		fr=(fr=="one"?"two":"one");
-	}
+	//}
 	/*if(debug){
 		if(allstop)
 			console.log("Process Stopped.");
@@ -116,12 +108,10 @@ function iter(){
 	if(allstop)
 		return false;
 
-	nextfr=(fr=="one"?"two":"one");
-
 	found=false;
 	tentative_winner=false;
 
-	for(var i in frame[fr].alive)
+	for(var i in alive)
 	{
 		analyzeNextLoop(i);
 	}
@@ -135,7 +125,7 @@ function iter(){
 				tentative_winner=null;
 			if(!found)
 			{
-				tentative_winner=team;
+				//tentative_winner=team;
 				found=true;
 			}
 		}
@@ -145,16 +135,14 @@ function iter(){
 	if(tentative_winner)
 		winner=true;
 
-	frame[nextfr].dying=frame[fr].alive;
-
 	if(!winner)
-		frameQueue.push([frame[fr].alive,teams,undefined,frame[fr].dying]);
+		frameQueue.push([alive,teams,undefined,dying]);
 	else
-		frameQueue.push([frame[fr].alive,teams,tentative_winner]);
+		frameQueue.push([alive,teams,tentative_winner]);
 
-	frame[fr].alive={};
-	frame[fr].dying={};
-	frame[fr].found={};
+	dying=alive;
+	alive=nextAlive;
+	found={};
 }
 function analyzeNextLoop(index){
 	var x=(index/height) | 0,
@@ -163,7 +151,7 @@ function analyzeNextLoop(index){
 	//if(forceStop)
 		//return false;
 
-	var team=frame[fr].alive[index];
+	var team=alive[index];
 
 	/*if(x==0 || x==499)
 	{
@@ -179,6 +167,7 @@ function analyzeNextLoop(index){
 		{
 			x2 += width;
 			maskIndex += rightEdge;
+			console.log(x2 + ", " + y2 + " :: " + typeof index + " / " + maskIndex + ", " + (x2*height+y2));
 		}
 		else if(x2 >= width)
 		{
@@ -196,15 +185,13 @@ function analyzeNextLoop(index){
 			maskIndex -= height;
 		}
 
-		//console.log(x2 + ", " + y2 + " :: " + typeof index + " / " + maskIndex + ", " + (x2*height+y2));
-
 			
-		if(frame[fr].dying[maskIndex])
+		if(dying[maskIndex])
 			continue;
-		if(frame[fr].alive[maskIndex])
+		if(alive[maskIndex])
 			continue;
 
-		if(frame[fr].found[maskIndex]==undefined)
+		if(found[maskIndex]==undefined)
 		{
 			var count=[];
 			inner:
@@ -234,37 +221,22 @@ function analyzeNextLoop(index){
 					loopIndex -= height;
 				}
 
-				/*if(x==0 || x==499)
-				{
-					constring="Gen: "+genCount+"; x: "+x+"; y: "+y+";  | Mask: "+mask+"; x2: "+x2+"; y2: "+y2+"; Found: False;";
-					conlen=constring.length;
-					newlen=73-conlen;
-					inner=x5+","+y5;
-					innerlen=inner.length;
-					correct=x4+","+y4;
-					correctlen=correct.length;
-
-					console.log(constring+repeat(" ",newlen)+"| Inner Mask: "+ x5+","+y5+";"+repeat(" ",7-innerlen)+" Corrected: "+x4+","+y4+";"+repeat(" ",8-correctlen)+"Index: "+loopIndex+"; x: "+Math.floor(loopIndex/height)+"; y:"+(loopIndex%height)+";");
-				}*/
-
-				//++loopcounter;
-
-				if(frame[fr].alive[loopIndex]!=undefined){
-					count.push(frame[fr].alive[loopIndex]);
+				if(alive[loopIndex]!=undefined){
+					count.push(alive[loopIndex]);
 					if(count.length==3)
 						break inner;
 				}
 			}
 
 			if(count.length==2){
-				frame[fr].found[maskIndex]=true;
+				found[maskIndex]=true;
 
 				if(count[0]!=count[1]/* && (count[0]!="neutral" || count[1]!="neutral")*/){
-					frame[nextfr].alive[maskIndex]="neutral";
+					nextAlive[maskIndex]="neutral";
 					++teams["neutral"].newSpawn;
 				}
 				else if(count[0]==count[1]){
-					frame[nextfr].alive[maskIndex]=team;
+					nextAlive[maskIndex]=team;
 					++teams[team].newSpawns;
 				}
 				

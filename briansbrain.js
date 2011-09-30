@@ -1,7 +1,7 @@
 var battlefield=document.getElementById("battlefield"),
 	ctx=battlefield.getContext('2d'),
 	worker=new Worker('calcs_worker.js'),
-	mult=1,
+	mult=5,
 	width=(500/mult)|0,
 	height=(500/mult)|0,
 	iter_handle=null,
@@ -12,7 +12,7 @@ var battlefield=document.getElementById("battlefield"),
 	allstop=false,
 	loopInit=false,
 	preRender=false,
-	renderComplete=false;
+	renderComplete=false,
 	mainLoop=0,
 	renderLoop=0,
 	prep={
@@ -28,12 +28,12 @@ var battlefield=document.getElementById("battlefield"),
 	gen=0,
 	teams={
 		"one": {
-			alive: "#40B6EC",
+			alive: "#0080FF",
 			dying: "#152951",
 			newSpawns: 0
 		},
 		"two": {
-			alive: "#F62F46",
+			alive: "#FFA000",
 			dying: "#6C141E",
 			newSpawns: 0
 		},
@@ -121,7 +121,7 @@ worker.onmessage=function(event){
 				renderLoop=prep.gen;
 				//console.log(event.data[1][2]);
 				if(event.data[1][event.data[1].length-1][2]==undefined)
-					workerData("resumeProcessing");
+					{}//workerData("resumeProcessing");
 				else
 				{
 					renderComplete=true;
@@ -170,102 +170,24 @@ function run(){
 
 	alive={};
 
-	addLive(125, 125, "one");
-	addLive(125, 126, "one");
+	addLive(035, 035, "one");
+	addLive(035, 036, "one");
 
-	addLive(250, 250, "two");
-	addLive(250, 251, "two");
+	addLive(065, 065, "two");
+	addLive(065, 066, "two");
 
-	addLive(375, 375, "three");
-	addLive(375, 376, "three");
+	//addLive(250, 250, "two");
+	//addLive(250, 251, "two");
 
-/*
-	
-	alive[100,101]="two";
-
-	alive[150,150]="three";
-	alive[150,151]="three";
+	//addLive(375, 375, "three");
+	//addLive(375, 376, "three");
 
 
-	alive[25,25]="one";
-	alive[25,26]="one";
-
-	alive[50,50]="two";
-	alive[50,51]="two";
-
-	alive[75,75]="three";
-	alive[75,76]="three";
-
-	alive[50,50]="one";
-	alive[50,51]="one";
-	alive[51,50]="one";
-	alive[51,51]="one";
-
-	dying[49,50]="one";
-	dying['51-49']="one";
-	dying['52-51']="one";
-	dying['50-52']="one";
-
-	alive['30-50']="two";
-	alive['30-51']="two";
-	alive['32-49']="two";
-	alive['32-52']="two";
-	alive['34-48']="two";
-	alive['34-53']="two";
-	alive['36-47']="two";
-	alive['36-49']="two";
-	alive['36-52']="two";
-	alive['36-54']="two";
-	alive['39-47']="two";
-	alive['39-49']="two";
-	alive['39-52']="two";
-	alive['39-54']="two";
-
-	dying['31-50']="two";
-	dying['31-51']="two";
-	dying['33-49']="two";
-	dying['33-52']="two";
-	dying['35-48']="two";
-	dying['35-53']="two";
-	dying['37-47']="two";
-	dying['37-49']="two";
-	dying['37-52']="two";
-	dying['37-54']="two";
-	dying['38-48']="two";
-	dying['38-53']="two";
-
-
-	alive['60-60']="two";
-	alive['60-61']="two";
-	alive['61-60']="two";
-	alive['61-61']="two";
-
-	dying['59-60']="two";
-	dying['61-59']="two";
-	dying['62-61']="two";
-	dying['60-62']="two";
-
-
-	alive['70-70']="three";
-	alive['70-71']="three";
-	alive['71-70']="three";
-	alive['71-71']="three";
-
-	dying['69-70']="three";
-	dying['71-69']="three";
-	dying['72-71']="three";
-	dying['70-72']="three";
-
-
-	alive['40-40']="two";
-	alive['40-41']="two";
-	alive['41-40']="two";
-	alive['41-41']="two";	
-
-	*/
 	workerData("Cells",[alive,dying]);
 	workerData("startProcessing");
 
+	workerData("resumeProcessing");
+/*
 	iter_handle=setInterval(function(){
 		if(!preRender || renderComplete)
 		{
@@ -288,11 +210,54 @@ function run(){
 		}
 		else
 			debugData("PreRender Generations: "+renderLoop);
-	},75);
+	},175);*/
+}
+
+function step(){
+
+		if(!preRender || renderComplete)
+		{
+			tmparr=frameQueues.pop();
+			if(tmparr==undefined)
+			{
+				console.log('caught up to pre-render');
+				return true;
+			}
+			alive=tmparr[0];
+			dying=tmparr[3];
+			//console.log(dying);
+			teams=tmparr[1];
+			if(tmparr[2]!=undefined){
+				winner=true;
+				winner_label=tmparr[2];
+				clearInterval(iter_handle);
+			}
+			iter();
+		}
+		else
+			debugData("PreRender Generations: "+renderLoop);
+
+		workerData("resumeProcessing");
 }
 
 function stop(){
-	clearInterval(iter_handle);
+	frameQueues=[];
+	prep={
+		gen: 0,
+		cells_alive: 0,
+		cells_dead: 0
+	};
+	play={
+		gen: 0,
+		cells_alive: 0,
+		cells_dead: 0
+	};
+	renderLoop=0;
+	renderComplete=false;
+	winner=false;
+	alive={};
+	dying={};
+
 	workerData("stopProcessing");
 	allstop=true;
 }
@@ -300,8 +265,6 @@ function stop(){
 function iter(){
 	ctx.fillStyle = "#000";
 	ctx.fillRect(0, 0, width*mult, height*mult);
-	cellcount_alive=0;
-	cellcount_dead=0;
 
 	if(!winner)
 		gen++;
