@@ -146,8 +146,9 @@ function iter(){
 	frame[fr].dying={};
 	frame[fr].found={};
 }
-function analyzeNextLoop(index){
-	var x=(index/height) | 0,
+function analyzeNextLoop(ind){
+	var index=parseInt(ind,10),
+		x=(index/height) | 0,
 		y=index%height,
 		team=frame[fr].alive[index]
 
@@ -155,7 +156,7 @@ function analyzeNextLoop(index){
 	for(var i2=0,l2=masks.length;i2<l2;++i2){
 		var x2=x+masks[i2][0],
 			y2=y+masks[i2][1],
-			maskIndex=(index | 0)+masks[i2][2];
+			maskIndex=index+masks[i2][2];
 
 		if(x2<0)
 		{

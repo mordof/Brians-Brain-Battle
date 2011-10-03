@@ -66,7 +66,6 @@ function drawalive(index){
 		team=alive[index];
 
 	dot(x,y,teams[team].alive);
-	cellcount_alive++;
 }
 
 function drawdying(index){
@@ -75,7 +74,6 @@ function drawdying(index){
 		team=dying[index];
 
 	dot(x,y,teams[team].dying);
-	cellcount_dead++;
 }
 
 function debugData(string){
