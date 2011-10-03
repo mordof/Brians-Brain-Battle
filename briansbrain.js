@@ -60,7 +60,8 @@ function fullDot(x, y, col){
 	ctx.fillRect(x*mult, y*mult, 1*mult-(mult>1?0.5:0)-0.5, 1*mult-(mult>1?0.5:0)-0.5);
 }
 
-function drawalive(index){
+function drawalive(packedIndex){
+	var index=unpack32(packedIndex);
 	var x=(index/height) | 0,
 		y=index%height,
 		team=alive[index];
@@ -68,7 +69,8 @@ function drawalive(index){
 	dot(x,y,teams[team].alive);
 }
 
-function drawdying(index){
+function drawdying(packedIndex){
+	var index=unpack32(packedIndex);
 	var x=(index/height) | 0,
 		y=index%height,
 		team=dying[index];
@@ -124,11 +126,11 @@ function runPreRender(){
 }
 
 function addLive(x, y, team){
-	alive[x*height+y]=team;
+	alive[pack32(x*height+y)]=team;
 }
 
 function addDying(x, y, team){
-	dying[x*height+y]=team;
+	dying[pack32(x*height+y)]=team;
 }
 
 function run(){
@@ -199,4 +201,15 @@ function iter(){
 	}
 	else
 		{}
+}
+
+function pack32(num) {
+	var i, r;
+	i = num / 65536 | 0;
+	r = num % 65536;
+	return String.fromCharCode(i) + String.fromCharCode(r);
+}
+
+function unpack32(str) {
+	return str.charCodeAt(0)*65536 + str.charCodeAt(1);
 }

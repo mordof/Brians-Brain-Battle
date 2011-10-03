@@ -147,37 +147,38 @@ function iter(){
 	frame[fr].found={};
 }
 function analyzeNextLoop(ind){
-	var index=parseInt(ind,10),
-		x=(index/height) | 0,
+	var index=unpack32(ind);
+	var	x=(index/height) | 0,
 		y=index%height,
-		team=frame[fr].alive[index]
+		team=frame[fr].alive[ind];
 
 	outer:
 	for(var i2=0,l2=masks.length;i2<l2;++i2){
 		var x2=x+masks[i2][0],
-			y2=y+masks[i2][1],
-			maskIndex=index+masks[i2][2];
+			y2=y+masks[i2][1];
 
 		if(x2<0)
 		{
 			x2 += width;
-			maskIndex += rightEdge;
+			//maskIndex += rightEdge;
 		}
 		else if(x2 >= width)
 		{
 			x2 -= width;
-			maskIndex -= rightEdge;
+			//maskIndex -= rightEdge;
 		}
 		if(y2<0)
 		{
 			y2 += height;
-			maskIndex += height;
+			//maskIndex += height;
 		}
 		else if(y2 >= height)
 		{
 			y2 -= height;
-			maskIndex -= height;
+			//maskIndex -= height;
 		}
+
+		maskIndex=pack32(x2*height+y2);
 
 		if(frame[fr].dying[maskIndex])
 			continue;
@@ -190,29 +191,30 @@ function analyzeNextLoop(ind){
 			inner:
 			for(var i=0,l=masks.length;i<l;++i){
 				var x4=x2+masks[i][0],
-					y4=y2+masks[i][1],
-					loopIndex=maskIndex+masks[i][2];
+					y4=y2+masks[i][1];
 
 				if(x4<0)
 				{
 					x4 += width;
-					loopIndex += rightEdge;
+					//loopIndex += rightEdge;
 				}
 				else if(x4 >= width)
 				{
 					x4 -= width;
-					loopIndex -= rightEdge;
+					//loopIndex -= rightEdge;
 				}
 				if(y4<0)
 				{
 					y4 += height;
-					loopIndex += height;
+					//loopIndex += height;
 				}
 				else if(y4 >= height)
 				{
 					y4 -= height;
-					loopIndex -= height;
+					//loopIndex -= height;
 				}
+
+				loopIndex=pack32(x4*height+y4);
 
 				if(frame[fr].alive[loopIndex]!=undefined){
 					count.push(frame[fr].alive[loopIndex]);
@@ -236,4 +238,15 @@ function analyzeNextLoop(ind){
 			}
 		}
 	}
+}
+
+function pack32(num) {
+	var i, r;
+	i = num / 65536 | 0;
+	r = num % 65536;
+	return String.fromCharCode(i) + String.fromCharCode(r);
+}
+
+function unpack32(str) {
+	return str.charCodeAt(0)*65536 + str.charCodeAt(1);
 }
